@@ -8,7 +8,6 @@ import User from "./models/User";
 import expressWs from "express-ws";
 import { WebSocket } from 'ws';
 import Message from "./models/Message";
-// import chatRouter from "./routers/chat";
 
 const app = express();
 const port = 8000;
