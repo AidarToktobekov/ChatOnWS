@@ -28,3 +28,19 @@ export interface IUser{
     username: string;
     token: string;
 }
+
+export interface Client{
+    id: string;
+    username: string;
+}
+
+export interface Message{
+    username: string,
+    id: string,
+    message: string,
+}
+
+export interface IncomingMessage{
+    type: string;
+    payload: Message;  
+}

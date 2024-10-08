@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom'
 import Register from './features/User/Register'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import Login from './features/User/Login'
+import Chat from './features/Chat/Chat'
 
 const App = ()=>{
 
@@ -15,7 +16,7 @@ const App = ()=>{
         <Routes>
           <Route path='/' element={
             <> 
-              <></>
+              <Chat/>
             </>
           }/>
           <Route path='/register' element={

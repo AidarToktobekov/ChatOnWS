@@ -16,28 +16,60 @@ app.use(express.json());
 app.use(cors());
 expressWs(app);
 
-const connectedClients:WebSocket[] = [];
+const chatRoom:WebSocket[] = [];
+const connectedClients: WebSocket[] = [];
 
 const chatRouter = express.Router();
 
-chatRouter.ws('/chat',  (ws, req) => {
+chatRouter.ws('/chat',  async(ws, req) => {
     console.log('Client connected');
-    connectedClients.push(ws);
+    chatRoom.push(ws);
+    
+    let token = '';
+    const message = await Message.find();
+    const lastMessages = message.slice(-31);
+    lastMessages.forEach(async(message)=>{
+        const user = await User.findById(message.user);
+        ws.send(JSON.stringify({
+            type: 'LAST_MESSAGES',
+            payload: {
+                username: user?.username,
+                id: user?._id,
+                message: message.text,
+            }
+        }))
+    })
 
     ws.on('message', async(message)=>{
         try{
             const decodedMessage = JSON.parse(message.toString()) as IncomingMessage;
-            if(decodedMessage.type === 'SET_MESSAGE'){
-                const headerValue = req.get('Authorization');
-                if (!headerValue) {
-                    return ws.send(JSON.stringify({error: 'Token not found'}))  
+            if (decodedMessage.type === 'LOGIN') {
+                if (decodedMessage.payload) {
+                    connectedClients.push(ws);
+                    token = decodedMessage.payload;
+                    const user = await User.findOne({token});
+                    if (!user) {
+                        return ws.send(JSON.stringify({error: 'User not found'}));
+                    }
+                    connectedClients.forEach((clientWs)=>{
+                        clientWs.send(JSON.stringify({
+                            type: 'LOGIN',
+                            payload: {
+                                username: user.username,
+                                id: user._id,
+                            }
+                        }));
+                    })
                 }
-                const [_bearer, token] = headerValue?.split(' ');
-                
+            }
+            if(decodedMessage.type === 'SET_MESSAGE'){
+                if (!token) {
+                    
+                    return ws.send(JSON.stringify({error: 'user is not registered'}))
+                }
                 const user = await User.findOne({token});
-                
                 if (!user) {
-                    return ws.send(JSON.stringify({error: 'User not found'}))  
+                    return ws.send(JSON.stringify({error: 'User not found'}));
                 }
                 const messageMutation = {
                     user: user._id,
@@ -45,7 +77,7 @@ chatRouter.ws('/chat',  (ws, req) => {
                 }
                 const message = new Message(messageMutation);
                 message.save();
-                connectedClients.forEach((clientWs)=>{
+                chatRoom.forEach((clientWs)=>{
                     clientWs.send(JSON.stringify({
                         type: 'NEW_MESSAGE',
                         payload: {
@@ -64,7 +96,7 @@ chatRouter.ws('/chat',  (ws, req) => {
     ws.on('close', ()=>{
         console.log('client disconnected');
         const index = connectedClients.indexOf(ws);
-        connectedClients.splice(index, 1)
+        chatRoom.splice(index, 1)
     })
 });
 
