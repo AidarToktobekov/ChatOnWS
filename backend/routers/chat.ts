@@ -6,6 +6,7 @@ import User from '../models/User';
 const connectedClients:WebSocket[] = [];
 
 const chatRouter = express.Router();
+
 chatRouter.ws('/chat',  (ws, req) => {
     console.log('Client connected');
     connectedClients.push(ws);
